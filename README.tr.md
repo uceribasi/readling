@@ -13,7 +13,7 @@ Açık kaynak · Tarayıcıda çalışır · Cihaz içi AI ya da kendi AI'ın ·
 
 [Özellikler](#özellikler) · [Hızlı başlangıç](#hızlı-başlangıç) · [AI sağlayıcıları](#ai-sağlayıcıları) · [Gizlilik](#gizlilik) · [English](README.md)
 
-<!-- TODO: yayına alınınca buraya "Canlı demo" bağlantısı ekle. -->
+**[Canlı demoyu dene](https://uceribasi.github.io/readling/)**
 
 </div>
 

@@ -13,7 +13,7 @@ Open source · Runs in your browser · On-device AI or bring your own · No acco
 
 [Features](#features) · [Quick start](#quick-start) · [AI providers](#ai-providers) · [Privacy](#privacy) · [Türkçe](README.tr.md)
 
-<!-- TODO: add a "Live demo" link here once it's deployed. -->
+**[Try the live demo](https://uceribasi.github.io/readling/)**
 
 </div>
 
