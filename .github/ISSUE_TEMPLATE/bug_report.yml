@@ -1,0 +1,29 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+    validations:
+      required: true
+  - type: input
+    id: browser
+    attributes:
+      label: Browser and OS
+      placeholder: e.g. Chrome 155 on macOS
+    validations:
+      required: true
+  - type: input
+    id: provider
+    attributes:
+      label: AI provider and model (if relevant)
+      description: Please don't paste your API key.
+      placeholder: e.g. Anthropic, claude-haiku-5-5
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else?
+      description: Screenshots, error messages from the browser console, the language of the text…

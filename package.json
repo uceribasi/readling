@@ -1,0 +1,60 @@
+{
+  "name": "readling",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Learn languages by reading what you love. Open source, runs in your browser, bring your own AI key.",
+  "license": "MIT",
+  "keywords": [
+    "language-learning",
+    "reading",
+    "pdf",
+    "spaced-repetition",
+    "fsrs",
+    "vocabulary",
+    "llm",
+    "byok",
+    "pwa",
+    "local-first"
+  ],
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "lint": "oxlint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "typecheck": "tsc -b",
+    "bridge": "node bridge/readling-bridge.ts"
+  },
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.135.0",
+    "dexie": "^4.4.6",
+    "dexie-react-hooks": "^4.4.0",
+    "fflate": "^0.8.3",
+    "kuromoji": "^0.1.2",
+    "pdfjs-dist": "^6.4.299",
+    "pinyin-pro": "^3.29.4",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "ts-fsrs": "^5.4.2"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^24.13.3",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "fake-indexeddb": "^6.2.6",
+    "jsdom": "^30.1.3",
+    "oxlint": "^1.81.0",
+    "tailwindcss": "^4.3.3",
+    "typescript": "~6.0.2",
+    "vite": "^8.3.0",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.0.5"
+  }
+}
