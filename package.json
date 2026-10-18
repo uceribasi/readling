@@ -4,6 +4,14 @@
   "version": "0.1.0",
   "description": "Learn languages by reading what you love. Open source, runs in your browser, bring your own AI key.",
   "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/uceribasi/readling.git"
+  },
+  "homepage": "https://github.com/uceribasi/readling#readme",
+  "bugs": {
+    "url": "https://github.com/uceribasi/readling/issues"
+  },
   "keywords": [
     "language-learning",
     "reading",
