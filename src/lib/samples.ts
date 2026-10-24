@@ -1,4 +1,4 @@
-import { db } from './db'
+import { db, newId } from './db'
 import { countWords } from './tokenize'
 
 const SEEDED_KEY = 'readling.seeded'
@@ -37,6 +37,7 @@ export async function seedSamplesOnce(): Promise<void> {
   await db.texts.bulkAdd(
     SAMPLES.map((sample, index) => ({
       ...sample,
+      syncId: newId(),
       kind: 'text' as const,
       wordCount: countWords(sample.content, sample.language),
       createdAt: now - index,

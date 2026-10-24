@@ -1,5 +1,15 @@
+import { learningFeatures } from './learningFeatures'
+import { syncFeatures } from './syncFeatures'
+import { listeningFeatures } from './listeningFeatures'
+import { libraryFeatures } from './libraryFeatures'
+import { memoryFeatures } from './memoryFeatures'
 /** English interface strings. Every other language must have exactly these keys. */
 export const en = {
+  ...learningFeatures.en,
+  ...syncFeatures.en,
+  ...listeningFeatures.en,
+  ...libraryFeatures.en,
+  ...memoryFeatures.en,
   'nav.skip': 'Skip to content',
   'nav.label': 'Main',
   'nav.library': 'Library',

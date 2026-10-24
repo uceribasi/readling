@@ -1,5 +1,7 @@
+import { ReaderStudyPanel } from '../components/ReaderStudyPanel'
 import { Fragment, useEffect, useMemo, useRef, useState, type MouseEvent, type ReactNode } from 'react'
 import { ReadingsToggle, StatusLegend, WordAside } from '../components/ReaderParts'
+import { ReaderTools } from '../components/ReaderTools'
 import { SimplifyPanel } from '../components/SimplifyPanel'
 import { STATUS_CLASS } from '../components/statusStyles'
 import { ui } from '../components/ui'
@@ -8,6 +10,7 @@ import { db, markUntrackedAsKnown, recordPageRead, setWordStatus, type TextDoc, 
 import { isTypingTarget, useWordMap, useWordShortcuts } from '../lib/hooks'
 import { useT } from '../lib/i18n'
 import { textDirection } from '../lib/languages'
+import { clampReadingPage, readerLocations, type TextSearchMatch } from '../lib/library'
 import { buildPhraseIndex, findTextPhrases, MAX_PHRASE_WORDS, phraseTerm, type PhraseMatch } from '../lib/phrases'
 import type { Annotation } from '../lib/readings'
 import { canSpeak, readAloud } from '../lib/speech'
@@ -52,7 +55,7 @@ function wordClass(entry: WordEntry | undefined, selected: boolean): string {
 }
 
 /** Reader for pasted texts: every word is a clickable, colored token. Long texts are split into pages. */
-export function TextReader({ text }: { text: TextDoc }) {
+export function TextReader({ text, initialPage }: { text: TextDoc; initialPage?: number }) {
   const t = useT()
   const { language, content } = text
   const wordMap = useWordMap(language)
@@ -60,7 +63,12 @@ export function TextReader({ text }: { text: TextDoc }) {
 
   const paragraphs = useMemo(() => (content && language ? tokenize(content, language) : []), [content, language])
   const pages = useMemo(() => paginate(paragraphs), [paragraphs])
-  const [page, setPage] = useState(() => Math.min(Math.max(text.readingPage ?? 0, 0), Math.max(pages.length - 1, 0)))
+  const [page, setPage] = useState(() => clampReadingPage(initialPage ?? text.readingPage, pages.length))
+  const locations = useMemo(() => readerLocations(content, pages), [content, pages])
+  const [foundSentence, setFoundSentence] = useState<{ page: number; sentence: number } | null>(null)
+  useEffect(() => {
+    if (initialPage !== undefined) void db.texts.update(text.id, { readingPage: clampReadingPage(initialPage, pages.length), updatedAt: Date.now() })
+  }, [initialPage, text.id, pages.length])
   const pageParagraphs = useMemo(() => pages[page] ?? [], [pages, page])
   const positions = useMemo(() => wordPositions(pageParagraphs), [pageParagraphs])
   const terms = useMemo(() => uniqueTerms(paragraphs), [paragraphs])
@@ -256,16 +264,23 @@ export function TextReader({ text }: { text: TextDoc }) {
     document.querySelector(`[data-sentence="${readingSentence}"]`)?.scrollIntoView({ block: 'nearest', behavior: 'smooth' })
   }, [readingSentence])
 
-  function goToPage(next: number) {
-    if (next < 0 || next >= pages.length) return
+  function goToPage(next: number, match?: TextSearchMatch) {
+    if (next < 0 || next >= pages.length || (next === page && !match)) return
     stopReading.current?.()
     stopReading.current = null
     setReading(null)
     setSelected(null)
     setPage(next)
-    void db.texts.update(text.id, { readingPage: next })
+    setFoundSentence(match?.sentence === undefined ? null : { page: next, sentence: match.sentence })
+    void db.texts.update(text.id, { readingPage: next, updatedAt: Date.now() })
     articleRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' })
   }
+
+  useEffect(() => {
+    if (!foundSentence || foundSentence.page !== page) return
+    const timer = window.setTimeout(() => regionRef.current?.querySelector(`[data-sentence="${foundSentence.sentence}"]`)?.scrollIntoView({ block: 'center', behavior: 'smooth' }), 0)
+    return () => window.clearTimeout(timer)
+  }, [foundSentence, page])
 
   function onTextClick(event: MouseEvent<HTMLDivElement>) {
     const element = (event.target as HTMLElement).closest<HTMLElement>('[data-word]')
@@ -374,7 +389,7 @@ export function TextReader({ text }: { text: TextDoc }) {
     return (
       <span
         data-sentence={ordinal}
-        className={reading?.sentence === ordinal ? 'rounded bg-indigo-50 box-decoration-clone dark:bg-indigo-500/10' : undefined}
+        className={foundSentence?.page === page && foundSentence.sentence === ordinal ? 'rounded bg-amber-100 box-decoration-clone outline-2 outline-offset-2 outline-amber-400 dark:bg-amber-500/20' : reading?.sentence === ordinal ? 'rounded bg-indigo-50 box-decoration-clone dark:bg-indigo-500/10' : undefined}
       >
         {stack[0].children}
       </span>
@@ -396,7 +411,9 @@ export function TextReader({ text }: { text: TextDoc }) {
     try {
       await markUntrackedAsKnown(language, untracked)
       await recordPageRead(text.id, page, positions.length)
-      setFinishedPages((current) => new Set(current).add(page))
+      const completed = new Set(finishedPages).add(page)
+      setFinishedPages(completed)
+      await db.texts.update(text.id, { readingStatus: completed.size === pages.length ? 'finished' : 'reading', updatedAt: Date.now() })
       if (!lastPage) goToPage(page + 1)
     } finally {
       setFinishing(false)
@@ -418,6 +435,7 @@ export function TextReader({ text }: { text: TextDoc }) {
           {text.title}
         </h1>
         <SourceLink url={text.sourceUrl} />
+        <ReaderTools text={text} page={page} totalPages={pages.length} onNavigate={goToPage} locations={locations} searchContent={content} />
 
         <div className="mt-4 flex flex-wrap items-center justify-between gap-2">
           <StatusLegend stats={stats} />
@@ -512,6 +530,7 @@ export function TextReader({ text }: { text: TextDoc }) {
             </nav>
           ) : null}
         </div>
+        <ReaderStudyPanel text={text} excerpt={pageSentences.map((sentence) => sentence.text).join(" ")} />
       </article>
 
       <WordAside open={Boolean(selectedItem)}>
@@ -524,6 +543,7 @@ export function TextReader({ text }: { text: TextDoc }) {
             surface={selectedItem.surface}
             sentence={selectedItem.sentence.text}
             entry={wordMap.get(selectedItem.term)}
+            source={{ id: text.syncId ?? '', title: text.title, url: text.sourceUrl, page }}
             reading={readings.status === 'ready' ? readings.annotator.reading(selectedItem.surface) : undefined}
             parts={
               selectedItem.words.length > 1

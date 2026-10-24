@@ -1,6 +1,8 @@
 import 'fake-indexeddb/auto'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { db, recordQuizAnswer, saveExplanation, setWordStatus } from './db'
+import { db, markUntrackedAsKnown, queueForReview, recordQuizAnswer, rememberContext, saveExplanation, saveReviewedCard, setWordStatus } from './db'
+import { newCard } from './srs'
+import { saveWordFamily } from './vocabulary'
 
 beforeEach(async () => {
   await db.delete()
@@ -30,5 +32,41 @@ describe('vocabulary persistence', () => {
     vi.setSystemTime(2000)
     await recordQuizAnswer('en:bank', true)
     expect(await db.words.get('en:bank')).toMatchObject({ updatedAt: 2000, quiz: { correct: 1, wrong: 0, lastAt: 2000 } })
+  })
+
+  const edits: [string, () => Promise<void>][] = [
+    ['quiz answers', () => recordQuizAnswer('en:bank', true)],
+    ['reviews', () => saveReviewedCard('en:bank', newCard(new Date()))],
+    ['encounters', () => rememberContext('en', 'bank', `A bank at ${Date.now()}.`)],
+    ['explanations', () => saveExplanation('en', 'bank', { lemma: 'bank', partOfSpeech: 'noun', translation: 'banka', meaning: '', grammar: '', example: '', exampleTranslation: '' }, 'A bank.')],
+    ['word families', () => saveWordFamily('en:bank', 'bank')],
+  ]
+  it.each(edits)('keeps the legacy status clock independent of %s', async (_, edit) => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    await db.words.put({ key: 'en:bank', language: 'en', term: 'bank', status: 'learning', createdAt: 1000, updatedAt: 1000, card: newCard(new Date(1000)) })
+    vi.setSystemTime(2000)
+    await edit()
+    expect(await db.words.get('en:bank')).toMatchObject({ statusAt: 1000, updatedAt: 2000 })
+    vi.setSystemTime(3000)
+    await edit()
+    expect(await db.words.get('en:bank')).toMatchObject({ statusAt: 1000, updatedAt: 3000 })
+  })
+
+  it('records page completion and deliberate re-queueing as explicit status decisions', async () => {
+    vi.useFakeTimers({ toFake: ['Date'] })
+    vi.setSystemTime(1000)
+    await markUntrackedAsKnown('en', ['bank'])
+    expect(await db.words.get('en:bank')).toMatchObject({ status: 'known', statusAt: 1000 })
+    await queueForReview(['en:bank'])
+    const queued = (await db.words.get('en:bank'))!
+    expect(queued.status).toBe('learning')
+    expect(queued.statusAt).toBeGreaterThan(1000)
+    expect(queued.card).toBeDefined()
+  })
+
+  it('does not attach a stale review card after the word has become known', async () => {
+    await setWordStatus('en', 'bank', 'known')
+    await saveReviewedCard('en:bank', newCard())
+    expect((await db.words.get('en:bank'))?.card).toBeUndefined()
   })
 })

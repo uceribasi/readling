@@ -1,12 +1,14 @@
 import { useLiveQuery } from 'dexie-react-hooks'
 import type { PDFDocumentProxy, PDFPageProxy, RenderTask, TextLayer } from 'pdfjs-dist'
 import { Fragment, useCallback, useEffect, useMemo, useRef, useState, type MouseEvent } from 'react'
+import { ReaderTools } from '../components/ReaderTools'
 import { ReadingsToggle, StatusLegend, WordAside } from '../components/ReaderParts'
 import { ui } from '../components/ui'
 import { WordPanel } from '../components/WordPanel'
 import { db, markUntrackedAsKnown, recordPageRead, setWordStatus, type TextDoc, type WordStatus } from '../lib/db'
 import { useWordMap, useWordShortcuts } from '../lib/hooks'
 import { useT } from '../lib/i18n'
+import { clampReadingPage, type ReaderLocation } from '../lib/library'
 import { loadPdfjs, openPdfDocument } from '../lib/pdf'
 import { caretAt, indexTextLayer, offsetOf, rangeFor, sentenceAt, wordAt, type PageTextIndex, type PageWord } from '../lib/pdfText'
 import { buildPhraseIndex, findTextPhrases, MAX_PHRASE_WORDS, phraseTerm } from '../lib/phrases'
@@ -29,7 +31,7 @@ interface PdfSelection {
 const supportsHighlights = typeof CSS !== 'undefined' && 'highlights' in CSS
 
 /** Reader for PDFs: pages are rendered as they are, and words are picked from pdf.js's text layer. */
-export function PdfReader({ text }: { text: TextDoc }) {
+export function PdfReader({ text, initialPage }: { text: TextDoc; initialPage?: number }) {
   const t = useT()
   const { language } = text
   const wordMap = useWordMap(language)
@@ -38,6 +40,9 @@ export function PdfReader({ text }: { text: TextDoc }) {
   const [failed, setFailed] = useState(false)
   const [width, setWidth] = useState(0)
   const [selection, setSelection] = useState<PdfSelection | null>(null)
+  const [currentPage, setCurrentPage] = useState(() => clampReadingPage(initialPage ?? text.readingPage, text.pageCount ?? Number.MAX_SAFE_INTEGER))
+  const resumeTarget = useRef<number | null>(initialPage ?? text.readingPage ?? null)
+  const latestPage = useRef(currentPage)
   const columnRef = useRef<HTMLDivElement>(null)
   const layers = useRef(new Map<number, PageTextIndex>())
   // Unique words of each rendered page; also tells effects when a page's text layer changed.
@@ -88,6 +93,10 @@ export function PdfReader({ text }: { text: TextDoc }) {
         layers.current.set(page, index)
         setPageTerms((current) => new Map(current).set(page, [...new Set(index.words.map((word) => word.term))]))
         setPageWordCounts((current) => new Map(current).set(page, index.words.length))
+        if (resumeTarget.current === page - 1) {
+          layer.closest<HTMLElement>('[data-pdf-page]')?.scrollIntoView({ block: 'start' })
+          resumeTarget.current = null
+        }
       } else {
         layers.current.delete(page)
         setPageTerms((current) => {
@@ -99,6 +108,62 @@ export function PdfReader({ text }: { text: TextDoc }) {
     },
     [language],
   )
+
+  // Restore the saved zero-based page once placeholders exist, before scroll tracking starts.
+  useEffect(() => {
+    if (!doc || !width || resumeTarget.current === null) return
+    const page = clampReadingPage(resumeTarget.current, doc.numPages)
+    resumeTarget.current = page
+    latestPage.current = page
+    setCurrentPage(page)
+    if (initialPage !== undefined) void db.texts.update(text.id, { readingPage: page, updatedAt: Date.now() })
+    columnRef.current?.querySelector<HTMLElement>(`[data-pdf-page="${page}"]`)?.scrollIntoView({ block: 'start' })
+  }, [doc, width, initialPage, text.id])
+
+  useEffect(() => {
+    if (!doc || !width) return
+    let timer: number | undefined
+    const saveVisiblePage = (updateUi = true) => {
+      if (resumeTarget.current !== null) return
+      const visible = [...(columnRef.current?.querySelectorAll<HTMLElement>('[data-pdf-page]') ?? [])]
+        .find((element) => element.getBoundingClientRect().bottom > 100)
+      if (!visible) return
+      const page = Number(visible.dataset.pdfPage)
+      if (page === latestPage.current) return
+      latestPage.current = page
+      if (updateUi) setCurrentPage(page)
+      void db.texts.update(text.id, { readingPage: page, updatedAt: Date.now() })
+    }
+    const onScroll = () => { window.clearTimeout(timer); timer = window.setTimeout(() => saveVisiblePage(), 150) }
+    window.addEventListener('scroll', onScroll, { passive: true })
+    return () => { window.clearTimeout(timer); window.removeEventListener('scroll', onScroll); saveVisiblePage(false) }
+  }, [doc, width, text.id])
+
+  const searchSource = useCallback(async (signal: AbortSignal) => {
+    if (!doc) throw new Error('missing-pdf')
+    let content = ''
+    const locations: ReaderLocation[] = []
+    for (let page = 0; page < doc.numPages; page++) {
+      if (signal.aborted) throw new Error('cancelled')
+      const pdfPage = await doc.getPage(page + 1)
+      const text = await pdfPage.getTextContent()
+      const body = text.items.map((item) => 'str' in item ? item.str + (item.hasEOL ? '\n' : ' ') : '').join('')
+      const start = content.length
+      content += body + '\n\n'
+      locations.push({ page, sentence: 0, start, end: content.length })
+    }
+    return { content, locations }
+  }, [doc])
+
+  function goToPage(page: number) {
+    const target = clampReadingPage(page, doc?.numPages ?? text.pageCount ?? 1)
+    setSelection(null)
+    latestPage.current = target
+    setCurrentPage(target)
+    resumeTarget.current = layers.current.has(target + 1) ? null : target
+    columnRef.current?.querySelector<HTMLElement>(`[data-pdf-page="${target}"]`)?.scrollIntoView({ block: 'start', behavior: 'instant' })
+    void db.texts.update(text.id, { readingPage: target, updatedAt: Date.now() })
+  }
 
   // Color new and learning words on every rendered page.
   useEffect(() => {
@@ -238,6 +303,8 @@ export function PdfReader({ text }: { text: TextDoc }) {
             <StatusLegend />
             <ReadingsToggle language={language} state={readings} />
           </div>
+          <ReaderTools text={text} page={currentPage} totalPages={doc?.numPages ?? text.pageCount ?? 1} onNavigate={goToPage} searchSource={doc ? searchSource : undefined} />
+          <a href={`#/quiz/${language}?text=${text.id}`} className={`${ui.secondaryButton} mt-3`}>{t('textQuiz.scope', { title: text.title })}</a>
           <p className="mt-2 hidden text-xs text-stone-400 sm:block">{t('reader.pdfHint')}</p>
         </div>
 
@@ -251,7 +318,10 @@ export function PdfReader({ text }: { text: TextDoc }) {
                   <FinishPage
                     language={language}
                     pageNumber={i + 1}
-                    onFinish={() => recordPageRead(text.id, i + 1, pageWordCounts.get(i + 1) ?? 0)}
+                    onFinish={async () => {
+                      await recordPageRead(text.id, i, pageWordCounts.get(i + 1) ?? 0)
+                      await db.texts.update(text.id, { readingPage: i, updatedAt: Date.now() })
+                    }}
                     untracked={(pageTerms.get(i + 1) ?? []).filter((term) => !wordMap.has(term))}
                     rendered={pageTerms.has(i + 1)}
                   />
@@ -271,6 +341,7 @@ export function PdfReader({ text }: { text: TextDoc }) {
             surface={selection.surface}
             sentence={selection.sentence}
             entry={wordMap.get(selection.term)}
+            source={{ id: text.syncId ?? '', title: text.title, url: text.sourceUrl, page: selection.page - 1 }}
             reading={readings.status === 'ready' ? readings.annotator.reading(selection.surface) : undefined}
             onStatus={changeStatus}
             onClose={() => setSelection(null)}
@@ -361,7 +432,7 @@ function PdfPage({ doc, pageNumber, width, onTextLayer }: PdfPageProps) {
     }
   }, [doc, pageNumber, width, visible, onTextLayer])
 
-  return <div ref={wrapperRef} className="pdf-page" style={{ width, height: Math.round(width * aspect) }} />
+  return <div ref={wrapperRef} data-pdf-page={pageNumber - 1} className="pdf-page scroll-mt-24" style={{ width, height: Math.round(width * aspect) }} />
 }
 
 /** Below each page: mark the page's remaining new words as known (LingQ's "page turn"). */

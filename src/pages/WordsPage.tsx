@@ -1,3 +1,4 @@
+import { WordMemory } from '../components/WordMemory'
 import { useLiveQuery } from 'dexie-react-hooks'
 import { useMemo, useState } from 'react'
 import { HighlightedSentence } from '../components/HighlightedSentence'
@@ -217,6 +218,7 @@ function WordRow({
   const t = useT()
   const uiLanguage = useUiLanguage()
   const stats = word.quiz
+  const [memoryOpen, setMemoryOpen] = useState(false)
   const due = word.status === 'learning' && word.card ? new Date(word.card.due) : undefined
   const surface = clozeParts(word)?.surface ?? displayTerm(word.term, word.language)
 
@@ -244,6 +246,8 @@ function WordRow({
             <HighlightedSentence sentence={word.context} surface={surface} />
           </p>
         ) : null}
+        <button type="button" className={`${ui.ghostButton} -ml-2 mt-1 text-xs`} aria-expanded={memoryOpen} onClick={() => setMemoryOpen(!memoryOpen)}>{t('memory.details')}</button>
+        {memoryOpen ? <WordMemory language={word.language} term={word.term} /> : null}
       </div>
 
       <div className="flex shrink-0 flex-wrap items-center gap-x-3 gap-y-1 text-xs text-stone-500 sm:justify-end dark:text-stone-400">

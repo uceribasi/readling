@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } 
 import { SpeakButton } from '../components/SpeakButton'
 import { ui } from '../components/ui'
 import { db, queueForReview, recordQuizAnswer, type WordEntry } from '../lib/db'
+import { wordsForText } from '../lib/daily'
 import { isTypingTarget } from '../lib/hooks'
 import { useT, useUiLanguage, type MessageKey } from '../lib/i18n'
 import { languageName } from '../lib/languages'
@@ -28,18 +29,26 @@ type Phase =
   | { name: 'running'; questions: Question[]; answers: Answer[] }
   | { name: 'done'; questions: Question[]; answers: Answer[] }
 
-export function QuizPage({ language: requested }: { language?: string }) {
+export function QuizPage(props: { language?: string; textId?: number }) {
+  return <QuizSession key={`${props.language ?? ''}:${props.textId ?? ''}`} {...props} />
+}
+
+function QuizSession({ language: requested, textId }: { language?: string; textId?: number }) {
   const t = useT()
   const words = useLiveQuery(() => db.words.toArray())
+  const textResult = useLiveQuery(async () => textId ? { text: await db.texts.get(textId) } : { text: undefined }, [textId])
   const [phase, setPhase] = useState<Phase>({ name: 'setup' })
 
-  if (words === undefined) return null
+  if (words === undefined || textResult === undefined) return null
+  const text = textResult.text
+  const scoped = textId ? text ? wordsForText(text, words) : [] : words
 
   return (
     <div className="mx-auto flex max-w-xl flex-col gap-6">
       <h1 className={ui.pageTitle}>{t('quiz.title')}</h1>
+      {textId ? <div className="flex flex-col gap-2"><p className={ui.muted}>{text ? t('textQuiz.scope', { title: text.title }) : t('textQuiz.missing')}</p>{text?.kind === 'pdf' ? <p className={ui.muted}>{t('textQuiz.pdfPreview')}</p> : null}<a href={text ? `#/read/${text.id}` : '#/'} className={`${ui.ghostButton} self-start`}>{t(text ? 'textQuiz.back' : 'nav.library')}</a></div> : null}
       {phase.name === 'setup' ? (
-        <QuizSetup words={words} requested={requested} onStart={(questions) => setPhase({ name: 'running', questions, answers: [] })} />
+        <QuizSetup key={`${requested ?? ''}:${textId ?? ''}`} words={scoped} distractorWords={words} requested={text?.language ?? requested} textScope={Boolean(textId)} onStart={(questions) => setPhase({ name: 'running', questions, answers: [] })} />
       ) : phase.name === 'running' ? (
         <QuizRun
           // Remount per question so its local state starts fresh.
@@ -66,10 +75,14 @@ export function QuizPage({ language: requested }: { language?: string }) {
 function QuizSetup({
   words,
   requested,
+  distractorWords,
+  textScope,
   onStart,
 }: {
   words: WordEntry[]
   requested?: string
+  distractorWords: WordEntry[]
+  textScope: boolean
   onStart: (questions: Question[]) => void
 }) {
   const t = useT()
@@ -81,21 +94,22 @@ function QuizSetup({
     return [...counts.entries()].sort((a, b) => b[1] - a[1])
   }, [usable])
 
-  const [language, setLanguage] = useState(() =>
+  const [selectedLanguage, setLanguage] = useState(() =>
     requested && languages.some(([code]) => code === requested) ? requested : (languages[0]?.[0] ?? ''),
   )
+  const language = languages.some(([code]) => code === selectedLanguage) ? selectedLanguage : (languages[0]?.[0] ?? '')
   const [scope, setScope] = useState<QuizScope>('all')
-  const [count, setCount] = useState(10)
+  const [count, setCount] = useState(textScope ? 3 : 10)
 
   const pool = usable.filter((word) => word.language === language)
   const targets = pool.filter((word) => inScope(word, scope))
-  const withTranslation = pool.filter((word) => word.translation).length
+  const withTranslation = distractorWords.filter((word) => word.language === language && word.status !== 'ignored' && word.translation).length
 
   if (languages.length === 0) {
     return (
       <div className={`${ui.card} flex flex-col items-center gap-2 p-10 text-center`}>
         <p className="font-medium text-stone-800 dark:text-stone-100">{t('quiz.noWords')}</p>
-        <p className={ui.muted}>{t('quiz.noWordsHint')}</p>
+        <p className={ui.muted}>{t(textScope ? 'textQuiz.noWords' : 'quiz.noWordsHint')}</p>
         <a href="#/" className={`${ui.secondaryButton} mt-2`}>
           {t('nav.library')}
         </a>
@@ -134,7 +148,7 @@ function QuizSetup({
       </ChoiceRow>
 
       <ChoiceRow label={t('quiz.count')}>
-        {COUNTS.map((n) => (
+        {(textScope ? [3, 5, 10] : COUNTS).map((n) => (
           <Choice key={n} selected={count === n} onSelect={() => setCount(n)}>
             {n}
           </Choice>
@@ -146,7 +160,7 @@ function QuizSetup({
       <button
         type="button"
         disabled={targets.length === 0}
-        onClick={() => onStart(buildQuiz(targets, pool, count))}
+        onClick={() => onStart(buildQuiz(targets, distractorWords.filter((word) => word.language === language && word.status !== 'ignored' && isQuizzable(word)), count))}
         className={ui.primaryButton}
       >
         {t('quiz.start', { n: Math.min(count, targets.length) })}

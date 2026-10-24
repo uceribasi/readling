@@ -55,6 +55,33 @@ describe('readEpub', () => {
     ])
   })
 
+  it('keeps heading titles and offsets into the exact extracted text', async () => {
+    const book = await readEpub(epub())
+    expect(book.toc).toEqual([{ title: 'Capítulo uno', start: 0 }, { title: 'Dos', start: book.text.indexOf('Dos') }])
+  })
+
+  it('uses EPUB 3 navigation labels and fragment offsets within a chapter', async () => {
+    const book = await readEpub(epub({
+      'OEBPS/content.opf': opf.replace('<manifest>', '<manifest><item id="nav" href="nav.xhtml" properties="nav" media-type="application/xhtml+xml"/>'),
+      'OEBPS/nav.xhtml': xhtml('<nav xmlns:epub="http://www.idpf.org/2007/ops" epub:type="toc"><ol><li><a href="text/one.xhtml#intro">Introduction</a></li><li><a href="text/one.xhtml#next">The second part</a></li><li><a href="text/chapter%202.xhtml">Finale</a></li></ol></nav>'),
+      'OEBPS/text/one.xhtml': xhtml('<h1 id="intro">First</h1><p>Hello.</p><section id="next"><h2>Next</h2><p>Again.</p></section>'),
+    }))
+    expect(book.toc).toEqual([
+      { title: 'Introduction', start: 0 },
+      { title: 'The second part', start: book.text.indexOf('Next') },
+      { title: 'Finale', start: book.text.indexOf('Dos') },
+    ])
+  })
+
+  it('reads EPUB 2 NCX navigation and ignores missing fragment targets', async () => {
+    const book = await readEpub(epub({
+      'OEBPS/content.opf': opf.replace('<manifest>', '<manifest><item id="toc" href="toc.ncx" media-type="application/x-dtbncx+xml"/>'),
+      'OEBPS/toc.ncx': '<ncx><navMap><navPoint><navLabel><text>Start here</text></navLabel><content src="text/one.xhtml"/></navPoint><navPoint><navLabel><text>Missing</text></navLabel><content src="text/chapter%202.xhtml#missing"/></navPoint></navMap></ncx>',
+    }))
+    expect(book.toc[0]).toEqual({ title: 'Start here', start: 0 })
+    expect(book.toc[1]).toEqual({ title: 'Dos', start: book.text.indexOf('Dos') })
+  })
+
   it('refuses books with encrypted chapters', async () => {
     const encryption = '<encryption><EncryptedData><CipherReference URI="OEBPS/text/one.xhtml"/></EncryptedData></encryption>'
     await expect(readEpub(epub({ 'META-INF/encryption.xml': encryption }))).rejects.toMatchObject({ code: 'drm' })

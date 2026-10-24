@@ -1,6 +1,6 @@
 import type { Card } from 'ts-fsrs'
 import type { Explanation } from './ai/types'
-import type { DayActivity, StoredFile, TextDoc, WordEntry } from './db'
+import type { DayActivity, StoredFile, TextDoc, WordEntry, WordContext, Tombstone } from './db'
 import { LANGUAGES } from './languages'
 
 export interface BackupFile extends Omit<StoredFile, 'blob'> {
@@ -16,6 +16,7 @@ export interface Backup {
   /** Missing in backups made before PDFs and activity were supported. */
   files?: BackupFile[]
   activity?: DayActivity[]
+  tombstones?: Tombstone[]
 }
 
 function invalid(): never {
@@ -88,6 +89,28 @@ function explanation(value: unknown): Explanation {
   }
 }
 
+function webUrl(value: unknown): string {
+  const text = string(value)
+  let url: URL
+  try { url = new URL(text) } catch { return invalid() }
+  if (!['https:', 'http:'].includes(url.protocol)) return invalid()
+  return text
+}
+
+function context(value: unknown): WordContext {
+  const item = record(value)
+  return {
+    id: string(item.id), sentence: string(item.sentence), seenAt: timestamp(item.seenAt),
+    updatedAt: optional(item.updatedAt, timestamp),
+    translation: optional(item.translation, (v) => string(v, true)),
+    explanation: optional(item.explanation, explanation),
+    source: optional(item.source, (value) => {
+      const source = record(value)
+      return { id: string(source.id), title: string(source.title, true), url: optional(source.url, webUrl), page: optional(source.page, count) }
+    }),
+  }
+}
+
 function card(value: unknown): Card {
   const item = record(value)
   const state = count(item.state)
@@ -118,9 +141,12 @@ function word(value: unknown): WordEntry {
     language: lang,
     term,
     status: item.status as WordEntry['status'],
+    statusAt: optional(item.statusAt, timestamp),
     context: optional(item.context, (value) => string(value, true)),
     translation: optional(item.translation, (value) => string(value, true)),
     explanation: optional(item.explanation, explanation),
+    contexts: optional(item.contexts, (v) => array(v, context)),
+    family: optional(item.family, (v) => string(v, true)),
     card: optional(item.card, card),
     quiz: optional(item.quiz, (value) => {
       const stats = record(value)
@@ -146,6 +172,26 @@ function text(value: unknown): TextDoc {
   }
   return {
     id,
+    syncId: optional(item.syncId, string),
+    collection: optional(item.collection, (v) => string(v, true)),
+    readingStatus: optional(item.readingStatus, (v) => {
+      if (!['unread', 'reading', 'finished'].includes(string(v))) return invalid()
+      return v as TextDoc['readingStatus']
+    }),
+    chapters: optional(item.chapters, (v) => array(v, (value) => {
+      const chapter = record(value)
+      const start = count(chapter.start)
+      if (start > string(item.content, true).length) return invalid()
+      return { title: string(chapter.title), start }
+    })),
+    bookmarks: optional(item.bookmarks, (v) => unique(array(v, (value) => {
+      const bookmark = record(value)
+      return { id: string(bookmark.id), page: count(bookmark.page), label: string(bookmark.label, true), note: string(bookmark.note, true), createdAt: timestamp(bookmark.createdAt), updatedAt: optional(bookmark.updatedAt, timestamp) }
+    }), (b) => b.id)),
+    bookmarkDeletions: optional(item.bookmarkDeletions, (v) => unique(array(v, (value) => {
+      const deletion = record(value)
+      return { id: string(deletion.id), deletedAt: timestamp(deletion.deletedAt) }
+    }), (entry) => entry.id)),
     kind: kind as TextDoc['kind'],
     title: string(item.title),
     language: language(item.language),
@@ -201,6 +247,7 @@ export function parseBackup(value: unknown): Backup {
   date(item.exportedAt)
   const files = unique(array(item.files === undefined ? [] : item.files, file), (file) => file.id)
   const texts = unique(array(item.texts, text), (text) => text.id)
+  unique(texts.filter((text) => text.syncId), (text) => text.syncId!)
   const fileIds = new Set(files.map((file) => file.id))
   if (texts.some((text) => text.kind === 'pdf' && !fileIds.has(text.fileId!))) return invalid()
   return {
@@ -211,6 +258,12 @@ export function parseBackup(value: unknown): Backup {
     words: unique(array(item.words, word), (word) => word.key),
     files,
     activity: unique(array(item.activity === undefined ? [] : item.activity, activity), (day) => day.date),
+    tombstones: unique(array(item.tombstones ?? [], (value) => {
+      const entry = record(value)
+      const key = string(entry.key)
+      if (!/^(text|word):.+/.test(key)) return invalid()
+      return { key, updatedAt: timestamp(entry.updatedAt) }
+    }), (entry) => entry.key),
   }
 }
 

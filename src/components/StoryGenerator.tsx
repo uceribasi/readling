@@ -3,6 +3,8 @@ import { useEffect, useRef, useState } from 'react'
 import { isAiConfigured } from '../lib/ai'
 import { STORY_LENGTHS, writeStory, type StoryLength } from '../lib/ai/write'
 import { db } from '../lib/db'
+import { practiceWords, type StoryPractice } from '../lib/daily'
+import { useNow } from '../lib/hooks'
 import { errorMessage } from '../lib/errors'
 import { useT, type MessageKey } from '../lib/i18n'
 import { LEVELS, type Level } from '../lib/levels'
@@ -26,31 +28,32 @@ export function LevelSelect({ id, value, onChange }: { id: string; value: Level;
 }
 
 /** Writes a story at the learner's level, optionally around the words they're learning. */
-export function StoryGenerator({
-  language,
-  onWritten,
-}: {
+interface StoryGeneratorProps {
   language: string
   onWritten: (story: { title: string; text: string }) => void
-}) {
+}
+
+export function StoryGenerator(props: StoryGeneratorProps) {
+  return <StoryForm key={props.language} {...props} />
+}
+
+function StoryForm({ language, onWritten }: StoryGeneratorProps) {
   const t = useT()
   const settings = useSettings()
   const [topic, setTopic] = useState('')
   const [length, setLength] = useState<StoryLength>('short')
   const [useWords, setUseWords] = useState(true)
+  const [practice, setPractice] = useState<StoryPractice>('recent')
+  const now = useNow()
   const [state, setState] = useState<{ status: 'idle' | 'writing' } | { status: 'error'; message: string }>({ status: 'idle' })
   const controller = useRef<AbortController | null>(null)
   useEffect(() => () => controller.current?.abort(), [])
 
-  // The most recently added learning words in this language.
-  const learning = useLiveQuery(
-    async () =>
-      (await db.words.where('language').equals(language).filter((word) => word.status === 'learning').toArray())
-        .sort((a, b) => b.createdAt - a.createdAt)
-        .slice(0, MAX_STORY_WORDS)
-        .map((word) => word.term),
+  const words = useLiveQuery(
+    () => db.words.where('language').equals(language).toArray(),
     [language],
   )
+  const learning = practiceWords(words ?? [], practice, MAX_STORY_WORDS, now).map((word) => word.term)
 
   async function write() {
     controller.current?.abort()
@@ -133,13 +136,21 @@ export function StoryGenerator({
             ))}
           </div>
         </fieldset>
-        {learning && learning.length > 0 ? (
+        {words && words.some((word) => word.status !== 'ignored') ? (
           <label className="flex cursor-pointer items-center gap-2 text-sm text-stone-700 dark:text-stone-300">
             <input type="checkbox" checked={useWords} onChange={(event) => setUseWords(event.target.checked)} className="size-4 accent-indigo-600" />
             {t('story.useWords', { n: learning.length })}
           </label>
         ) : null}
       </div>
+
+      {useWords ? <div className="flex flex-col gap-2">
+        <label htmlFor="story-practice" className={ui.label}>{t('storyPractice.source')}</label>
+        <select id="story-practice" value={practice} disabled={state.status === 'writing'} onChange={(event) => setPractice(event.target.value as StoryPractice)} className={ui.input}>
+          {(['recent', 'weak', 'due'] as const).map((mode) => <option key={mode} value={mode}>{t(`storyPractice.${mode}`)}</option>)}
+        </select>
+        <p className="text-xs text-stone-500 dark:text-stone-400">{learning.length ? learning.join(' · ') : t('storyPractice.empty')}</p>
+      </div> : null}
 
       <div className="flex flex-wrap items-center gap-3">
         <button type="button" onClick={write} disabled={state.status === 'writing'} className={ui.primaryButton}>

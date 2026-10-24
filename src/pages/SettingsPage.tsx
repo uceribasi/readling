@@ -5,6 +5,8 @@ import { explainWord, isAiConfigured } from '../lib/ai'
 import { builtinStatus, downloadPromptModel, type BuiltinStatus } from '../lib/ai/builtin'
 import { PROVIDER_GROUPS, PROVIDERS, type ProviderId } from '../lib/ai/providers'
 import { deleteAllData, exportBackup, importBackup, lastBackupAt } from '../lib/backup'
+import { stopSync } from '../lib/sync'
+import { SyncSettings } from '../components/SyncSettings'
 import { db, requestPersistentStorage } from '../lib/db'
 import { canSpeak, speak, voiceScore, voicesFor } from '../lib/speech'
 import { errorMessage } from '../lib/errors'
@@ -50,6 +52,7 @@ export function SettingsPage() {
 
   async function deleteEverything() {
     if (!window.confirm(t('settings.deleteAllConfirm'))) return
+    stopSync()
     await deleteAllData()
     window.location.hash = '#/'
     window.location.reload()
@@ -271,6 +274,7 @@ export function SettingsPage() {
       </Section>
 
       <VoiceSettings />
+      <SyncSettings />
 
       <Section title={t('settings.data')}>
         <p className={ui.muted}>{t('settings.dataNote')}</p>

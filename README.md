@@ -28,7 +28,7 @@ Open source · Runs in your browser · On-device AI or bring your own · No acco
 
 readling brings reading, vocabulary and practice together in a static web app:
 
-- **Your library stays in your browser.** No readling account or application server is required. You can use a hosted copy or host the static files yourself.
+- **Your library stays in your browser by default.** No readling account or application server is required. You can use a hosted copy or host the static files yourself, with optional encrypted sync to your own server.
 - **Choose where AI runs.** Use free on-device browser AI where supported, your own API key, Ollama, or a local coding-agent bridge. Browser AI availability depends on your browser, hardware and language pair; see [AI providers](#ai-providers).
 - **Learn words in context.** Full AI explanations include the meaning in the selected sentence, grammar and an example. If only browser translation is available, you get word and sentence translations instead.
 - **AI is optional for practice.** Reading, word tracking and review work without AI. Tests use the translations and source sentences already saved with your words.
@@ -47,22 +47,24 @@ Paste an article, a story or song lyrics, or load a `.txt` file. New words are b
 - **Finish one page at a time:** "Finished this page" marks only that page's remaining new words as known, records the reading and moves to the next page if there is one. Learning words keep their status. If there are no new words, you can still mark the page as read.
 - **Live vocabulary coverage:** the library shows known and learning words for each text and updates when you change word statuses, including from the Words page or another text.
 - **Personal difficulty:** once you have at least 100 known words in a language, text previews show the unfamiliar share and a label: *Easy*, *Good level*, *Challenging* or *Hard*.
+- **Library organization:** search titles, collections and saved text; filter by language, collection and *To read*, *Reading* or *Finished* status. “Read this next” recommends text readings using familiar vocabulary, length and words that need practice.
+- **Reading tools:** jump to a page, find words and phrases, and save editable bookmarks with personal notes. Text searches highlight matches; PDFs can prepare a searchable index of all their text pages on request. Library search uses a PDF's saved preview.
 
 <img alt="A German text in the reader with “Straßenbahn” selected; the panel shows “tram, streetcar”, its meaning in the sentence, a grammar note and an example." src="docs/screenshots/reader-text.png">
 
 ### Bring anything to read
 
-- **EPUB books:** import a DRM-free EPUB. readling extracts chapters in order, along with the title, author and language when available. Books open in the text reader; the original book layout is not preserved.
+- **EPUB books:** import a DRM-free EPUB. readling extracts chapters in order, along with the title, author and language when available, and provides a table of contents for chapter navigation. Books open in the text reader; the original book layout is not preserved.
 - **Wikipedia:** search Wikipedia in the language you're learning and read any article, minus the reference sections.
-- **Web articles:** with the [browser extension](extension/README.md) for Chrome, Edge and Brave, send the current article or selected passage to readling. Article extraction removes menus and ads where possible. Install the extension from the included `extension/` folder and set your readling URL in its options.
-- **Stories at your level:** describe a topic, pick a level from A1 to C2, and the AI writes a short story, using the words you're learning if you like.
+- **Web articles and inline lookup:** with the [browser extension](extension/README.md) for Chrome, Edge and Brave, send the current article or selected passage to readling. You can also right-click a selected word or short phrase, see its explanation on the original page and save it with its source context. AI requests use your configured readling tab; API keys stay in the app. Install the included `extension/` folder and set your readling URL in its options.
+- **Stories at your level:** describe a topic, pick a level from A1 to C2, and the AI writes a short story. Optional practice words can come from your recently added, weak or currently due vocabulary.
 - **Simplify:** ask AI to rewrite the current text page or the whole text at an easier level. The rewrite is saved as a separate text, keeping the original. This is available in the text reader.
 
 ### PDFs keep their layout
 
 PDFs retain their original page layout. readling uses the PDF's text layer for word and phrase selection, sentence translation and pronunciation. It joins words split across lines with a hyphen and uses line spacing to identify paragraph boundaries.
 
-Pages render as you scroll. Distant pages release their rendered content to reduce memory use and render again when needed. Each page has its own finish button, including an option to record reading when all its words are already tracked.
+Pages render as you scroll. Distant pages release their rendered content to reduce memory use and render again when needed. The reader remembers your page, including when you jump through search results or bookmarks. Each page has its own finish button, including an option to record reading when all its words are already tracked.
 
 PDFs need an extractable text layer: scanned images require OCR, which is not implemented. Password-protected PDFs are not supported.
 
@@ -72,12 +74,15 @@ PDFs need an extractable text layer: scanned images require OCR, which is not im
 | Word and sentence pronunciation | Yes | Yes |
 | Continuous page read-aloud | Yes | No |
 | Furigana and pinyin | Inline and in the word panel | In the word panel |
-| Saved page position, library vocabulary coverage and difficulty | Yes | No |
+| Saved page position, bookmarks and notes | Yes | Yes |
+| Live library vocabulary coverage and difficulty | Yes | No |
 | AI simplification | Current page or whole text | No |
 
 ### All your words in one place
 
-Search and filter every word you've looked up by language and status, including **weak** words you keep getting wrong. Each word shows the sentence you met it in, when it's due for review and how you've done in tests. You can export the list as CSV for Anki.
+Search and filter every word you've looked up by language and status, including **weak** words you keep getting wrong. Each word shows its review date and test results. Its encounter history keeps multiple source sentences and their explanations, so meanings such as *bank* as a financial institution and a river bank can coexist. Saved source links return to the text and page where available. You can export the list as CSV for Anki.
+
+**Word families** group saved forms that share an AI-provided lemma or an editable family label, such as *go*, *went* and *gone*. Related forms keep separate learning statuses and review schedules; the app does not generate a full conjugation dictionary.
 
 <img alt="The Words page filtered to Spanish words being learned, each with its translation, source sentence, review date and test accuracy." src="docs/screenshots/words.png">
 
@@ -88,8 +93,21 @@ Search and filter every word you've looked up by language and status, including 
   - Wrong options come from your own vocabulary and prefer the same part of speech.
   - Typed answers accept missing accents and a single typo in answers of at least five characters as close answers. Optional Arabic and Hebrew vowel marks do not count as mistakes.
 - **Tests don't touch your review schedule.** One click sends the words you missed back to review.
+- **Practice the text you just read:** start a test restricted to tracked vocabulary from that text, using its saved source meaning when available. PDF tests use saved page encounters and the imported preview, rather than assuming the entire book has been read.
 
 <img alt="A multiple-choice test question asking what “lámpara” means; “lamp” is marked correct and the source sentence is shown." src="docs/screenshots/quiz.png">
+
+### A daily reading routine
+
+Choose a **5-, 10- or 15-minute goal** for a short sequence of due reviews, a recommended reading excerpt and a vocabulary check. These are workload presets, not a countdown timer. Progress resumes for the same day and language in this browser; missing review or quiz material can be skipped.
+
+**Reading comprehension** is available in daily practice and the text reader. On request, AI generates main-idea and inference questions plus a model summary, with supporting quotations highlighted in the source. Write your answers, then compare them with the model answers for self-assessment. Answers are not automatically graded or sent back to AI. Long sources are limited to a 12,000-character excerpt, and comprehension drafts remain on the current screen.
+
+### Listen with your own subtitles
+
+Open **Listen**, select an SRT or WebVTT subtitle file and matching local audio or video, and choose the recording's language. Follow the synchronized transcript, seek to a sentence, repeat it, change playback speed and click words to learn them. Dictation hides the transcript while you type; feedback compares words and spelling, ignoring case and punctuation.
+
+Subtitles are limited to 2 MB and 5,000 cues; recordings to 1 GB. Media and subtitle selections last only for the current screen session and must be selected again after reopening. **Save transcript to library** retains the text; it does not store or upload the recording.
 
 ### Progress you can see and share
 
@@ -107,8 +125,16 @@ The CEFR estimate is a rough indicator based on your known word forms, not a lan
 - **Installable and offline:** add readling to your home screen or dock like an app. Once a production build has loaded and cached its assets, saved texts, PDFs, vocabulary and practice are available offline. Cloud AI, Wikipedia and first-time model or Japanese dictionary downloads need a connection.
 - **Keyboard-first:** see the [shortcuts](#keyboard-shortcuts) below.
 - **Light and dark themes**, and a layout that works on phones.
-- **Backups:** export texts, embedded PDF files, vocabulary (including saved explanations), review schedules, test results and activity to one JSON file. Settings, API keys and AI caches are excluded. Imports are validated before restoring and merge with existing data, retaining newer word progress and test history. readling also reminds you to back up. Transfer between devices is manual; automatic sync is not implemented.
+- **Backups:** export texts, embedded PDF files, library organization, reading positions, bookmarks and notes, vocabulary and encounter history, review schedules, test results and activity to one JSON file. Imports are validated and merged with existing data. Settings, API keys, AI caches, daily session progress and goal preferences are excluded. readling also reminds you to back up.
 - **A guided start:** pick your languages and an AI, then open a sample text.
+
+### Optional encrypted device sync
+
+In **Settings**, connect an existing HTTPS WebDAV or compatible file endpoint using a full file URL, optional Basic-auth credentials and a passphrase of at least 12 characters. HTTP is allowed only for localhost. The app encrypts the backup data above with AES-GCM before uploading it; use the same endpoint and passphrase on every device. The endpoint address is remembered unless it contains a query string, which may hold an access token. Credentials, query-bearing addresses and the passphrase stay in tab-session memory. The passphrase cannot be recovered.
+
+Sync includes recorded learning results and activity, but daily session stages, goal preferences, app settings and session-only media stay on each device. Newer document and word records win; encounter histories are combined. Bookmarks merge independently, and the newest edit wins when the same bookmark changes on two devices. Deletions propagate. Daily totals take the larger value for each counter rather than adding device totals, so simultaneous activity can be undercounted.
+
+After a successful sync, optional automatic sync runs every five minutes while the tab is open, visible and online. The remote folder must already exist, allow `GET`/`PUT` and conditional writes (`If-Match`/`If-None-Match`), and return strong `ETag` values. A cross-origin server must allow the app's origin, request methods and headers through CORS and expose `ETag`. Compatibility depends on server configuration; live external WebDAV services have not yet been verified. Export a backup before the first sync. No sync service is configured by default.
 
 ### Supported languages
 
@@ -204,9 +230,11 @@ Pick the CLI under **CLI on this computer** in Settings and paste the pairing to
 - **Word explanations:** the selected word or phrase, its sentence, and your language choices go to the configured AI endpoint. Review cards can request a missing explanation for their saved sentence.
 - **Sentence translations:** the selected sentence and source/target languages are sent when you request a translation.
 - **Stories:** the topic, language, level, requested length and any practice words you choose are sent to the AI. **Simplification** sends the title, selected page or full text, language and target level.
+- **Comprehension:** generating questions sends the selected source excerpt and language choices to AI. Your written answers and self-assessment stay on the current screen.
 - **Where AI runs:** built-in browser AI processes prompts on your device after its models are downloaded. Ollama uses your configured endpoint; agent integrations send prompts through the local bridge to your CLI and its provider. Cloud providers receive prompts directly from your browser. API keys are sent to the endpoint you configure for that provider.
 - **Speech:** local voices work on your device. Non-local browser or operating-system voices may send the text being spoken to their speech service and may require a connection.
-- **Imports.** EPUB files are read in your browser. Wikipedia searches go straight from your browser to Wikipedia. The extension hands pages to your readling tab and sends them nowhere else.
+- **Imports and listening.** EPUBs, subtitles and media are read locally. Wikipedia searches go straight from your browser to Wikipedia. The extension hands article imports to your readling tab; an explicit word lookup sends the selection and nearby context through the app to your chosen AI provider. Clicking a subtitle word uses the same AI explanation flow as reading.
+- **Optional sync.** Only when you connect your own endpoint does an encrypted backup leave the browser for that server. Downloaded JSON backups are not encrypted.
 - **Furigana stays local.** The Japanese dictionary (about 18 MB) is served by readling itself and downloaded only when you turn furigana on. Pinyin needs no separate dictionary download.
 - **Fewer requests.** Explanations and sentence translations are cached by content and target language, so an available cached result avoids another request. Words you already know aren't sent unless you ask.
 
@@ -250,20 +278,23 @@ src/
     shareCard.ts     the shareable progress image
     backup.ts        JSON backup export and merge
     backupValidation.ts  backup schema and embedded PDF validation
+    daily.ts         daily sessions, practice words and recommendations
+    vocabulary.ts    encounter merging and saved word families
+    library.ts       library filters, text search and chapter locations
+    subtitles.ts     SRT/WebVTT parsing and dictation feedback
+    sync.ts          encrypted snapshots and conditional remote sync
     i18n.ts          interface language loading and formatting
   locales/           interface translations (en, tr, es, de, pt)
   components/        layout, word panel, shared reader parts
-  pages/             library, new text, import, readers, words, test, review, stats, settings
+  pages/             library, readers, daily practice, listening, words, test, review, stats, settings
 ```
 
 ## Roadmap
 
 The features above are implemented. Possible next additions:
 
-- [ ] Look up words directly on web pages
 - [ ] YouTube subtitle import
 - [ ] OCR for scanned PDFs
-- [ ] Optional sync between devices
 - [ ] More interface languages
 
 ## Contributing

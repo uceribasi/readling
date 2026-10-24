@@ -6,6 +6,8 @@ export interface EpubBook {
   /** The book's own language tag, e.g. "es" or "pt-BR". */
   language?: string
   chapters: number
+  /** Navigation titles and character offsets in the extracted plain text. */
+  toc: { title: string; start: number }[]
   /** Plain text, one paragraph per block, separated by blank lines. */
   text: string
 }
@@ -31,12 +33,13 @@ const BLOCK = new Set([
 const SKIP = new Set(['head', 'script', 'style', 'rt', 'rp', 'svg', 'math', 'nav'])
 
 /** Turns an XHTML chapter into paragraphs, one per block element. */
-export function paragraphsOf(root: Node): string[] {
+export function paragraphsOf(root: Node, anchors?: Map<string, number>): string[] {
   const paragraphs: string[] = []
   let buffer = ''
+  let flushedLength = 0
   const flush = () => {
     const paragraph = buffer.replace(/\s+/g, ' ').trim()
-    if (paragraph) paragraphs.push(paragraph)
+    if (paragraph) { paragraphs.push(paragraph); flushedLength += paragraph.length + 2 }
     buffer = ''
   }
   const walk = (node: Node) => {
@@ -48,6 +51,8 @@ export function paragraphsOf(root: Node): string[] {
       if (name === 'br') buffer += ' '
       const block = BLOCK.has(name)
       if (block) flush()
+      const id = (child as Element).getAttribute('id')
+      if (id && anchors) anchors.set(id, flushedLength + buffer.replace(/\s+/g, ' ').trimStart().length)
       walk(child)
       if (block) flush()
     }
@@ -82,7 +87,7 @@ export async function readEpub(file: File): Promise<EpubBook> {
   let files: Record<string, Uint8Array>
   try {
     files = unzipSync(new Uint8Array(await file.arrayBuffer()), {
-      filter: (entry) => /\.(xml|opf|x?html?|xht)$/i.test(entry.name),
+      filter: (entry) => /\.(xml|opf|ncx|x?html?|xht)$/i.test(entry.name),
     })
   } catch {
     throw new EpubError('invalid')
@@ -107,16 +112,55 @@ export async function readEpub(file: File): Promise<EpubBook> {
   if (encryption && spine.some((path) => encryption.includes(path.slice(base.length)) || encryption.includes(path)))
     throw new EpubError('drm')
 
+  const navigation: { path: string; fragment: string; title: string }[] = []
+  function addNavigation(basePath: string, href: string, title: string) {
+    if (!href || !title.trim()) return
+    const directory = basePath.includes('/') ? basePath.slice(0, basePath.lastIndexOf('/') + 1) : ''
+    let fragment = href.split('#')[1] ?? ''
+    try { fragment = decodeURIComponent(fragment) } catch { /* Keep a malformed fragment as text. */ }
+    navigation.push({ path: resolve(directory, href.split('#')[0] || basePath.slice(directory.length)), fragment, title: title.replace(/\s+/g, ' ').trim() })
+  }
+  const navItems = byName(opf, 'item').filter((item) => (item.getAttribute('properties') ?? '').split(/\s+/).includes('nav'))
+  for (const item of navItems) {
+    const path = manifest.get(item.getAttribute('id') ?? '')
+    const nav = path ? parseXml(read(path) ?? '', 'application/xhtml+xml') : null
+    if (!nav || !path) continue
+    const sections = byName(nav, 'nav')
+    const toc = sections.find((section) => (section.getAttribute('epub:type') ?? section.getAttribute('type') ?? '').split(/\s+/).includes('toc')) ?? sections[0]
+    if (toc) for (const link of byName(toc, 'a')) addNavigation(path, link.getAttribute('href') ?? '', link.textContent ?? '')
+  }
+  if (!navigation.length) {
+    const ncxItem = byName(opf, 'item').find((item) => item.getAttribute('media-type') === 'application/x-dtbncx+xml')
+    const path = ncxItem ? manifest.get(ncxItem.getAttribute('id') ?? '') : undefined
+    const ncx = path ? parseXml(read(path) ?? '') : null
+    if (ncx && path) for (const point of byName(ncx, 'navPoint')) {
+      addNavigation(path, byName(point, 'content')[0]?.getAttribute('src') ?? '', byName(point, 'navLabel')[0]?.textContent ?? '')
+    }
+  }
+
   let chapters = 0
+  let offset = 0
+  const toc: EpubBook['toc'] = []
   const paragraphs: string[] = []
   for (const path of spine) {
     const source = read(path)
     if (!source) continue
     const doc = parseXml(source, 'application/xhtml+xml') ?? new DOMParser().parseFromString(source, 'text/html')
     const body = byName(doc, 'body')[0]
-    const chapter = body ? paragraphsOf(body) : []
-    if (chapter.length) chapters++
+    const anchors = new Map<string, number>()
+    if (body?.id) anchors.set(body.id, 0)
+    const chapter = body ? paragraphsOf(body, anchors) : []
+    if (!chapter.length) continue
+    chapters++
+    const links = navigation.filter((entry) => entry.path === path && (!entry.fragment || anchors.has(entry.fragment)))
+    if (links.length) {
+      for (const link of links) toc.push({ title: link.title, start: offset + Math.min(anchors.get(link.fragment) ?? 0, chapter.join('\n\n').length) })
+    } else {
+      const heading = body && Array.from(body.querySelectorAll('h1, h2, h3')).find((element) => element.textContent?.trim())
+      toc.push({ title: heading?.textContent?.replace(/\s+/g, ' ').trim() || chapter[0].slice(0, 120), start: offset })
+    }
     paragraphs.push(...chapter)
+    offset += chapter.join('\n\n').length + 2
   }
   if (!paragraphs.length) throw new EpubError('empty')
 
@@ -126,6 +170,7 @@ export async function readEpub(file: File): Promise<EpubBook> {
     author: meta('creator'),
     language: meta('language'),
     chapters,
+    toc: toc.sort((a, b) => a.start - b.start).filter((entry, index, all) => !index || entry.start !== all[index - 1].start),
     text: paragraphs.join('\n\n'),
   }
 }

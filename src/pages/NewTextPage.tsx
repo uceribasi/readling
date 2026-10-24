@@ -139,6 +139,7 @@ export function NewTextPage() {
           title,
           language,
           kind: 'pdf',
+          syncId: newId(),
           fileId,
           pageCount: pdf.info.numPages,
           content: pdf.info.preview,
@@ -149,7 +150,7 @@ export function NewTextPage() {
     } else {
       // The editable texts are read directly, in case the deferred copy is a keystroke behind.
       const body = mode === 'paste' ? content.trim() : mode === 'generate' ? story.trim() : draft
-      id = await addText({ title, language, content: body, sourceUrl: mode === 'wikipedia' ? article?.url : undefined })
+      id = await addText({ title, language, content: body, sourceUrl: mode === 'wikipedia' ? article?.url : undefined, chapters: mode === 'file' && upload?.kind === 'book' ? upload.book.toc : undefined })
     }
     updateSettings({ lastTextLanguage: language })
     void requestPersistentStorage()

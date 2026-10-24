@@ -28,7 +28,7 @@ Açık kaynak · Tarayıcıda çalışır · Cihaz içi AI ya da kendi AI'ın ·
 
 readling; okumayı, kelime takibini ve alıştırmayı statik bir web uygulamasında bir araya getirir:
 
-- **Kitaplığın tarayıcında kalır.** readling hesabı veya uygulama sunucusu gerekmez. Yayınlanmış bir kopyayı kullanabilir ya da statik dosyaları kendin barındırabilirsin.
+- **Kitaplığın varsayılan olarak tarayıcında kalır.** readling hesabı veya uygulama sunucusu gerekmez. Yayınlanmış bir kopyayı kullanabilir ya da statik dosyaları kendin barındırabilirsin. Kendi sunucuna şifreli eşitleme isteğe bağlıdır.
 - **AI'ın nerede çalışacağını sen seç.** Desteklenen cihazlarda ücretsiz tarayıcı AI'ını, kendi API anahtarını, Ollama'yı veya yerel kodlama ajanı köprüsünü kullan. Tarayıcı AI'ının kullanılabilirliği tarayıcıya, donanıma ve dil çiftine bağlıdır; ayrıntılar [AI sağlayıcıları](#ai-sağlayıcıları) bölümünde.
 - **Kelimeleri bağlamıyla öğren.** Tam AI açıklamaları, seçilen cümledeki anlamı, dil bilgisini ve bir örneği içerir. Yalnızca tarayıcı çevirisi kullanılabiliyorsa kelime ve cümle çevirileri gösterilir.
 - **Alıştırma için AI zorunlu değil.** Okuma, kelime takibi ve tekrar AI olmadan çalışır. Testler, kelimelerinle birlikte kayıtlı çevirileri ve kaynak cümleleri kullanır.
@@ -47,22 +47,24 @@ Bir makale, hikâye ya da şarkı sözü yapıştır veya bir `.txt` dosyası y�
 - **Sayfaları tek tek tamamla:** "Bu sayfa bitti" yalnızca o sayfadaki kalan yeni kelimeleri bilinen yapar, okumayı kaydeder ve varsa sonraki sayfaya geçer. Öğrenmekte olduğun kelimelerin durumu değişmez. Yeni kelime kalmadığında da sayfayı okundu olarak kaydedebilirsin.
 - **Güncel kelime kapsamı:** Kitaplık, her metindeki bilinen ve öğrenilen kelimeleri gösterir. Kelime durumları, Kelimeler sayfasından veya başka bir metinden değiştirildiğinde de güncellenir.
 - **Sana göre zorluk:** Bir dilde en az 100 bilinen kelimeye ulaştığında metin önizlemeleri, henüz bilmediğin kelimelerin oranını ve *Kolay*, *Tam kıvamında*, *Zorlayıcı* veya *Zor* etiketini gösterir.
+- **Kitaplık düzeni:** Başlıklarda, koleksiyonlarda ve kayıtlı metinlerde ara; dile, koleksiyona ve *Okunacak*, *Okuyorum* veya *Bitirdim* durumuna göre filtrele. “Sırada bunu oku”, tanıdık kelimeleri, uzunluğu ve çalışman gereken kelimeleri dikkate alarak metin önerir.
+- **Okuma araçları:** Sayfaya git, kelime ve ifade ara, düzenlenebilir yer imleri ve kişisel notlar kaydet. Metin aramalarında eşleşmeler vurgulanır; PDF'lerin tüm metin sayfaları istek üzerine aramaya hazırlanır. Kitaplık araması PDF'in kayıtlı önizlemesini kullanır.
 
 <img alt="Okuyucuda bir Almanca metin, “Straßenbahn” seçili; panel “tram, streetcar” çevirisini, cümledeki anlamını, dil bilgisi notunu ve bir örneği gösteriyor." src="docs/screenshots/reader-text.png">
 
 ### Okumak için ne istersen getir
 
-- **EPUB kitaplar:** DRM'siz bir EPUB içe aktar. readling bölümleri sırasıyla, varsa başlık, yazar ve dil bilgisiyle birlikte alır. Kitaplar metin okuyucuda açılır; kitabın özgün sayfa düzeni korunmaz.
+- **EPUB kitaplar:** DRM'siz bir EPUB içe aktar. readling bölümleri sırasıyla, varsa başlık, yazar ve dil bilgisiyle birlikte alır; içindekiler menüsünden bölümler arasında gezinebilirsin. Kitaplar metin okuyucuda açılır; kitabın özgün sayfa düzeni korunmaz.
 - **Vikipedi:** Öğrendiğin dilde Vikipedi'de ara ve istediğin makaleyi kaynakça bölümleri olmadan oku.
-- **Web makaleleri:** Chrome, Edge ve Brave için [tarayıcı eklentisiyle](extension/README.md) açık makaleyi veya seçtiğin bölümü readling'e gönder. Makale çıkarımı, mümkün olduğunda menüleri ve reklamları ayıklar. Eklentiyi depodaki `extension/` klasöründen yükle ve seçeneklerinden readling adresini ayarla.
-- **Seviyene göre hikâyeler:** Bir konu yaz, A1'den C2'ye bir seviye seç; AI kısa bir hikâye yazsın, istersen öğrendiğin kelimeleri de kullanarak.
+- **Web makaleleri ve sayfada kelime açıklama:** Chrome, Edge ve Brave için [tarayıcı eklentisiyle](extension/README.md) açık makaleyi veya seçtiğin bölümü readling'e gönder. Seçili kelimeye veya kısa ifadeye sağ tıklayarak açıklamayı açık sayfada görebilir, kaynak bağlamıyla kaydedebilirsin. AI istekleri yapılandırdığın readling sekmesinden geçer; API anahtarları uygulamada kalır. Eklentiyi depodaki `extension/` klasöründen yükle ve seçeneklerinden readling adresini ayarla.
+- **Seviyene göre hikâyeler:** Bir konu yaz, A1'den C2'ye bir seviye seç; AI kısa bir hikâye yazsın. İsteğe bağlı alıştırma kelimelerini son eklenenler, zayıf kelimeler veya tekrar zamanı gelenler arasından seçebilirsin.
 - **Sadeleştir:** AI'dan açık metin sayfasını veya tüm metni daha kolay bir seviyede yeniden yazmasını iste. Yeni sürüm ayrı bir metin olarak kaydedilir, orijinali korunur. Bu özellik metin okuyucuda bulunur.
 
 ### PDF'ler düzenini korur
 
 PDF'ler özgün sayfa düzenini korur. readling; kelime ve ifade seçimi, cümle çevirisi ve telaffuz için PDF'in metin katmanını kullanır. Satır sonunda tireyle bölünmüş kelimeleri birleştirir, paragraf sınırlarını belirlemek için satır aralıklarından yararlanır.
 
-Sayfalar kaydırdıkça çizilir. Uzakta kalan sayfaların çizilmiş içerikleri bellek kullanımını azaltmak için kaldırılır ve gerektiğinde yeniden oluşturulur. Her sayfanın kendi bitirme düğmesi vardır; bütün kelimeleri takip edilen bir sayfanın okunmasını da kaydedebilirsin.
+Sayfalar kaydırdıkça çizilir. Uzakta kalan sayfaların çizilmiş içerikleri bellek kullanımını azaltmak için kaldırılır ve gerektiğinde yeniden oluşturulur. Okuyucu, arama sonuçları veya yer imleriyle atladığın sayfalar dahil kaldığın sayfayı hatırlar. Her sayfanın kendi bitirme düğmesi vardır; bütün kelimeleri takip edilen bir sayfanın okunmasını da kaydedebilirsin.
 
 PDF'in çıkarılabilir bir metin katmanı olmalıdır: taranmış görseller OCR gerektirir ve bu özellik henüz yoktur. Parola korumalı PDF'ler desteklenmez.
 
@@ -72,12 +74,15 @@ PDF'in çıkarılabilir bir metin katmanı olmalıdır: taranmış görseller OC
 | Kelime ve cümle telaffuzu | Var | Var |
 | Sayfanın tamamını kesintisiz sesli okuma | Var | Yok |
 | Furigana ve pinyin | Metin içinde ve kelime panelinde | Kelime panelinde |
-| Sayfa konumunu hatırlama, kitaplıkta kelime kapsamı ve zorluk | Var | Yok |
+| Sayfa konumunu hatırlama, yer imleri ve notlar | Var | Var |
+| Kitaplıkta güncel kelime kapsamı ve zorluk | Var | Yok |
 | AI ile sadeleştirme | Açık sayfa veya tüm metin | Yok |
 
 ### Bütün kelimelerin tek yerde
 
-Baktığın her kelimeyi dile ve duruma göre arayıp filtreleyebilirsin. Sürekli yanlış yaptığın **zayıf** kelimeler için ayrı bir filtre de var. Her kelimenin yanında onunla karşılaştığın cümle, bir sonraki tekrar zamanı ve testlerdeki başarın görünür. Listeyi Anki için CSV olarak dışa aktarabilirsin.
+Baktığın her kelimeyi dile ve duruma göre arayıp filtreleyebilirsin. Sürekli yanlış yaptığın **zayıf** kelimeler için ayrı bir filtre de var. Her kelimenin tekrar zamanı ve test başarısı görünür. Karşılaşma geçmişi, farklı kaynak cümlelerini açıklamalarıyla birlikte tutar; böylece *bank* kelimesinin banka ve nehir kıyısı anlamları birlikte saklanabilir. Kaynak bağlantıları, mevcutsa metne ve ilgili sayfaya döner. Listeyi Anki için CSV olarak dışa aktarabilirsin.
+
+**Kelime aileleri**, AI'ın verdiği sözlük biçimi veya düzenleyebildiğin aile etiketi aynı olan kayıtlı biçimleri bir araya getirir; örneğin *go*, *went* ve *gone*. Her biçimin öğrenme durumu ve tekrar takvimi ayrıdır; uygulama kapsamlı bir çekim sözlüğü üretmez.
 
 <img alt="İspanyolca ve öğrenilmekte olan kelimelere göre filtrelenmiş Kelimeler sayfası; her kelimede çeviri, kaynak cümle, tekrar zamanı ve test başarısı var." src="docs/screenshots/words.png">
 
@@ -88,8 +93,21 @@ Baktığın her kelimeyi dile ve duruma göre arayıp filtreleyebilirsin. Sürek
   - Yanlış şıklar kendi kelime hazinenden gelir ve mümkünse aynı türden seçilir.
   - Yazma sorularında eksik aksanlar ve en az beş karakterlik cevaplarda tek bir yazım hatası yakın cevap olarak kabul edilir. Arapça ve İbranicede isteğe bağlı hareke işaretleri hata sayılmaz.
 - **Testler tekrar takvimini değiştirmez.** Tek tıkla yanlış yaptığın kelimeleri tekrara gönderebilirsin.
+- **Okuduğun metni çalış:** Yalnızca o metinde takip ettiğin kelimelerle test başlat; mevcutsa metne ait kayıtlı anlam kullanılır. PDF testleri, kitabın tamamını okuduğunu varsaymak yerine kayıtlı sayfa karşılaşmalarını ve içe aktarılan önizlemeyi kullanır.
 
 <img alt="“lámpara” kelimesinin anlamını soran çoktan seçmeli bir test sorusu; “lamp” doğru olarak işaretli ve kaynak cümle gösteriliyor." src="docs/screenshots/quiz.png">
+
+### Günlük okuma rutini
+
+**5, 10 veya 15 dakikalık hedef** seç; zamanı gelen tekrarlar, önerilen bir okuma parçası ve kelime kontrolünden oluşan kısa bir akışa başla. Bu seçenekler geri sayım değil, çalışma miktarı belirler. Aynı gün ve dil için kaldığın aşama bu tarayıcıda saklanır; tekrar veya test malzemesi yoksa o aşamayı geçebilirsin.
+
+**Okuduğunu anlama** günlük çalışmada ve metin okuyucuda bulunur. İstediğinde AI ana fikir ve çıkarım soruları ile bir örnek özet üretir; dayandığı alıntılar kaynakta vurgulanır. Yanıtlarını yazıp örnek yanıtlarla karşılaştırarak kendin değerlendirirsin. Yanıtların otomatik puanlanmaz veya yeniden AI'a gönderilmez. Uzun kaynaklar 12.000 karakterlik bir parçayla sınırlandırılır; anlama çalışmasının taslakları yalnızca açık ekranda kalır.
+
+### Kendi altyazılarınla dinle
+
+**Dinle** ekranında bir SRT veya WebVTT altyazısı, eşleşen yerel ses ya da video ve kaydın dilini seç. Eşzamanlı dökümü takip et, cümleye atla, tekrar dinle, hızı değiştir ve kelimelere tıklayarak öğren. Duyduğunu yazma modunda döküm gizlenir; geri bildirim büyük harf ve noktalamayı önemsemeden kelimeleri ve yazımı karşılaştırır.
+
+Altyazılar en fazla 2 MB ve 5.000 bölüm, kayıtlar en fazla 1 GB olabilir. Medya ve altyazı seçimleri yalnızca açık ekran oturumunda kalır; yeniden açtığında tekrar seçmen gerekir. **Dökümü kitaplığa kaydet** metni saklar; ses veya video kaydedilmez ya da yüklenmez.
 
 ### Görebileceğin ve paylaşabileceğin ilerleme
 
@@ -107,8 +125,16 @@ CEFR tahmini, bildiğin kelime biçimlerine dayalı yaklaşık bir göstergedir;
 - **Kurulabilir ve çevrimdışı:** readling'i bir uygulama gibi ana ekrana ya da Dock'a ekle. Yayın için derlenen sürüm yüklenip dosyaları önbelleğe alındıktan sonra kayıtlı metinler, PDF'ler, kelimeler ve alıştırmalar çevrimdışı kullanılabilir. Bulut AI, Vikipedi ve ilk model veya Japonca sözlük indirmesi bağlantı gerektirir.
 - **Klavye öncelikli:** aşağıdaki [kısayollara](#klavye-kısayolları) bak.
 - **Açık ve koyu tema**, telefonda da çalışan bir düzen.
-- **Yedekleme:** Metinleri, gömülü PDF dosyalarını, kelimeleri (kayıtlı açıklamalarıyla), tekrar planlarını, test sonuçlarını ve etkinlikleri tek bir JSON dosyasına aktar. Ayarlar, API anahtarları ve AI önbelleği dahil edilmez. Yedekler geri yüklemeden önce doğrulanır; mevcut verilerle birleştirilirken daha güncel kelime ilerlemesi ve test geçmişi korunur. readling yedek almanı da hatırlatır. Cihazlar arası aktarım elle yapılır; otomatik senkronizasyon henüz yoktur.
+- **Yedekleme:** Metinleri, gömülü PDF'leri, kitaplık düzenini, okuma konumlarını, yer imleri ve notları, kelimeler ve karşılaşma geçmişini, tekrar takvimlerini, test sonuçlarını ve etkinlikleri tek bir JSON dosyasına aktar. Yedekler doğrulanarak mevcut verilerle birleştirilir. Ayarlar, API anahtarları, AI önbelleği, günlük oturum ilerlemesi ve hedef tercihi dahil edilmez. readling yedek almanı da hatırlatır.
 - **Rehberli başlangıç:** Dillerini ve bir AI seç, sonra örnek bir metin aç.
+
+### İsteğe bağlı şifreli cihaz eşitleme
+
+**Ayarlar**'dan mevcut bir HTTPS WebDAV veya uyumlu dosya adresine bağlan: tam dosya URL'sini, gerekiyorsa Basic kimlik doğrulama bilgilerini ve en az 12 karakterlik bir şifreleme parolasını gir. HTTP'ye yalnızca localhost için izin verilir. Uygulama yukarıdaki yedek verilerini yüklemeden önce AES-GCM ile şifreler; her cihazda aynı adresi ve şifreleme parolasını kullan. Sorgu parametresi içermeyen adresler hatırlanır. Erişim anahtarı içerebilen sorgulu adresler, kimlik doğrulama bilgileri ve şifreleme parolası yalnızca sekme oturumunun belleğinde tutulur. Şifreleme parolası kurtarılamaz.
+
+Kayıtlı öğrenme sonuçları ve etkinlikler eşitlenir; günlük oturum aşamaları, hedef tercihi, uygulama ayarları ve oturumluk medya her cihazda kalır. Daha güncel metin ve kelime kayıtları korunur; karşılaşma geçmişleri birleştirilir. Yer imleri bağımsız birleştirilir; aynı yer imi iki cihazda değiştirilmişse en yeni düzenleme kazanır. Silmeler aktarılır. Günlük sayaçlarda cihaz toplamları toplanmak yerine her sayacın büyük değeri alınır; eşzamanlı etkinlikler eksik sayılabilir.
+
+İlk başarılı eşitlemeden sonra, isteğe bağlı otomatik eşitleme sekme açık, görünür ve çevrimiçiyken beş dakikada bir çalışır. Uzak klasör önceden oluşturulmalı; `GET`/`PUT`, koşullu yazma (`If-Match`/`If-None-Match`) ve güçlü `ETag` değerleri desteklenmelidir. Farklı adresteki sunucu CORS üzerinden uygulamanın adresine, yöntemlerine ve istek başlıklarına izin vermeli, `ETag` başlığını erişime açmalıdır. Uyumluluk sunucu yapılandırmasına bağlıdır; canlı harici WebDAV hizmetleri henüz doğrulanmadı. İlk eşitlemeden önce yedek al. Varsayılan olarak bağlı bir eşitleme hizmeti yoktur.
 
 ### Desteklenen diller
 
@@ -204,9 +230,11 @@ Ayarlar'da **Bu bilgisayardaki CLI** altından aracı seç ve köprünün yazdı
 - **Kelime açıklamaları:** Seçilen kelime veya ifade, bulunduğu cümle ve dil tercihlerin yapılandırdığın AI adresine gider. Tekrar kartları da kayıtlı cümle için eksik açıklamayı isteyebilir.
 - **Cümle çevirileri:** Çeviri istediğinde seçilen cümle ile kaynak ve hedef diller gönderilir.
 - **Hikâyeler:** Konu, dil, seviye, uzunluk ve seçtiğin alıştırma kelimeleri AI'a gönderilir. **Sadeleştirme** için başlık, seçilen sayfa veya tüm metin, dil ve hedef seviye gönderilir.
+- **Okuduğunu anlama:** Soruları üretirken kaynak parça ve dil tercihleri AI'a gönderilir. Yazdığın yanıtlar ve değerlendirmen açık ekranda kalır.
 - **AI'ın çalıştığı yer:** Tarayıcının yerleşik AI'ı, modeller indirildikten sonra istekleri cihazında işler. Ollama yapılandırdığın adreste çalışır; agent entegrasyonları istekleri yerel köprü üzerinden CLI'a ve sağlayıcısına iletir. Bulut sağlayıcıları istekleri doğrudan tarayıcından alır. API anahtarları ilgili sağlayıcı için yapılandırdığın adrese gönderilir.
 - **Sesli okuma:** Yerel sesler cihazında çalışır. Yerel olmayan tarayıcı veya işletim sistemi sesleri okunacak metni konuşma hizmetine gönderebilir ve bağlantı gerektirebilir.
-- **İçe aktarma.** EPUB dosyaları tarayıcında okunur. Vikipedi aramaları tarayıcından doğrudan Vikipedi'ye gider. Eklenti sayfaları yalnızca readling sekmene verir, başka hiçbir yere göndermez.
+- **İçe aktarma ve dinleme.** EPUB'ler, altyazılar ve medya yerelde okunur. Vikipedi aramaları tarayıcından doğrudan Vikipedi'ye gider. Eklenti makale aktarımını readling sekmene yapar; açıkça kelime açıklaması istediğinde seçim ve yakın bağlam, uygulama üzerinden seçtiğin AI sağlayıcısına gider. Altyazı kelimesine tıklamak da okuyucudaki AI açıklama akışını kullanır.
+- **İsteğe bağlı eşitleme.** Yalnızca kendi adresini bağladığında şifreli yedek tarayıcıdan o sunucuya gönderilir. İndirdiğin JSON yedekler şifreli değildir.
 - **Furigana yerelde kalır.** Japonca sözlük (yaklaşık 18 MB) readling'in kendisi tarafından sunulur ve yalnızca furiganayı açtığında indirilir. Pinyin için ayrı bir sözlük indirmesi gerekmez.
 - **Daha az istek.** Açıklamalar ve cümle çevirileri içerik ve hedef dile göre önbelleğe alınır; mevcut bir önbellek sonucu yeni isteği önler. Zaten bildiğin kelimeler sen istemedikçe gönderilmez.
 
@@ -233,10 +261,8 @@ PDF kütüphanesi ve AI istemcileri yalnızca gerektiğinde yüklenir, böylece 
 
 Yukarıdaki özellikler uygulanmış durumda. İleride eklenebilecekler:
 
-- [ ] Web sayfalarında doğrudan kelimeye bakma
 - [ ] YouTube altyazılarını içe aktarma
 - [ ] Taranmış PDF'ler için OCR
-- [ ] Cihazlar arası isteğe bağlı senkronizasyon
 - [ ] Daha fazla arayüz dili
 
 ## Katkıda bulunma

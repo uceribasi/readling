@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { explainWord, getCachedExplanation, getCachedTranslation, isAiConfigured, translateSentence, type Explanation } from '../lib/ai'
-import { saveExplanation, type WordEntry, type WordStatus } from '../lib/db'
+import { rememberContext, saveExplanation, type WordEntry, type WordStatus, type WordSource } from '../lib/db'
+import { WordMemory } from './WordMemory'
 import { errorMessage } from '../lib/errors'
 import { useT, type MessageKey, type Translate } from '../lib/i18n'
 import { activeModel, getSettings, useSettings } from '../lib/settings'
@@ -17,6 +18,7 @@ interface WordPanelProps {
   surface: string
   sentence: string
   entry?: WordEntry
+  source?: WordSource
   /** Fetch an explanation without being asked. Off for words the learner already knows. */
   autoExplain: boolean
   /** Furigana or pinyin for the word, when readings are on. */
@@ -40,7 +42,7 @@ const STATUS_BUTTONS: { status: WordStatus; label: MessageKey; shortcut: string;
 ]
 
 /** Render with a `key` per selected word so its state starts fresh for each word. */
-export function WordPanel({ language, term, surface, sentence, entry, autoExplain, reading, parts, onStatus, onClose }: WordPanelProps) {
+export function WordPanel({ language, term, surface, sentence, entry, source, autoExplain, reading, parts, onStatus, onClose }: WordPanelProps) {
   const t = useT()
   const settings = useSettings()
   const configured = isAiConfigured(settings)
@@ -54,6 +56,14 @@ export function WordPanel({ language, term, surface, sentence, entry, autoExplai
 
   const { explanationLanguage, provider } = settings
   const model = activeModel(settings)
+  const sourceId = source?.id
+  const sourceTitle = source?.title
+  const sourceUrl = source?.url
+  const sourcePage = source?.page
+
+  useEffect(() => {
+    if (entry?.key) void rememberContext(language, term, sentence, sourceId ? { id: sourceId, title: sourceTitle ?? '', url: sourceUrl, page: sourcePage } : undefined)
+  }, [entry?.key, language, term, sentence, sourceId, sourceTitle, sourceUrl, sourcePage])
 
   useEffect(() => {
     const request = { term, surface, sentence, language, explanationLanguage }
@@ -65,7 +75,7 @@ export function WordPanel({ language, term, surface, sentence, entry, autoExplai
       if (cancelled) return
       if (cached) {
         setState({ status: 'done', data: cached })
-        await saveExplanation(language, term, cached, sentence)
+        await saveExplanation(language, term, cached, sentence, sourceId ? { id: sourceId, title: sourceTitle ?? '', url: sourceUrl, page: sourcePage } : undefined)
         return
       }
       if (!configured || (!autoExplain && manualRequest === 0)) return
@@ -74,7 +84,7 @@ export function WordPanel({ language, term, surface, sentence, entry, autoExplai
         const data = await explainWord(request, getSettings(), controller.signal)
         if (cancelled) return
         setState({ status: 'done', data })
-        await saveExplanation(language, term, data, sentence)
+        await saveExplanation(language, term, data, sentence, sourceId ? { id: sourceId, title: sourceTitle ?? '', url: sourceUrl, page: sourcePage } : undefined)
       } catch (error) {
         if (!cancelled) setState({ status: 'error', message: errorMessage(error, t) })
       }
@@ -86,7 +96,7 @@ export function WordPanel({ language, term, surface, sentence, entry, autoExplai
       controller.abort()
     }
     // getSettings() sends the latest settings; the listed fields decide when to refetch.
-  }, [term, surface, sentence, language, explanationLanguage, provider, model, configured, autoExplain, manualRequest, t])
+  }, [term, surface, sentence, language, explanationLanguage, provider, model, configured, autoExplain, manualRequest, t, sourceId, sourceTitle, sourceUrl, sourcePage])
 
   // S reads the word aloud, E asks the AI to explain it (useful after moving with the arrow keys), T translates the sentence.
   useEffect(() => {
@@ -186,6 +196,7 @@ export function WordPanel({ language, term, surface, sentence, entry, autoExplai
           />
         ) : null}
       </div>
+      {entry ? <WordMemory language={language} term={term} /> : null}
     </div>
   )
 }

@@ -12,6 +12,7 @@ export function Layout({ children }: { children: ReactNode }) {
     { href: '#/', label: t('nav.library'), active: route.name === 'library' || route.name === 'new' || route.name === 'read' || route.name === 'stats' || route.name === 'import' },
     { href: '#/words', label: t('nav.words'), active: route.name === 'words' || route.name === 'quiz' },
     { href: '#/review', label: t('nav.review'), active: route.name === 'review', badge: due?.length },
+    { href: '#/listen', label: t('nav.listen'), active: route.name === 'listen' },
     // A gear on phones, where the labels of five languages don't all fit.
     { href: '#/settings', label: t('nav.settings'), active: route.name === 'settings', icon: <GearIcon /> },
   ]
@@ -29,18 +30,18 @@ export function Layout({ children }: { children: ReactNode }) {
         {t('nav.skip')}
       </a>
       <header className="sticky top-0 z-20 border-b border-stone-200 bg-stone-50/90 backdrop-blur dark:border-stone-800 dark:bg-stone-950/90">
-        <div className="mx-auto flex h-14 max-w-6xl items-center justify-between gap-4 px-4">
+        <div className="mx-auto flex min-h-14 max-w-6xl items-center justify-between gap-2 px-3 sm:gap-4 sm:px-4">
           <a href="#/" className="flex items-center gap-2 font-semibold tracking-tight text-stone-900 dark:text-stone-50">
             <img src={`${import.meta.env.BASE_URL}favicon.svg`} alt="" className="size-6" />
             <span className="hidden sm:inline">readling</span>
           </a>
-          <nav className="flex items-center gap-1" aria-label={t('nav.label')}>
+          <nav className="flex min-w-0 items-center gap-0.5 sm:gap-1" aria-label={t('nav.label')}>
             {links.map((link) => (
               <a
                 key={link.href}
                 href={link.href}
                 aria-current={link.active ? 'page' : undefined}
-                className={`relative rounded-md px-2 py-1.5 text-sm font-medium transition sm:px-3 ${
+                className={`relative rounded-md px-1.5 py-1.5 text-xs font-medium transition sm:px-3 sm:text-sm ${
                   link.active
                     ? 'bg-stone-200/70 text-stone-900 dark:bg-stone-800 dark:text-stone-50'
                     : 'text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100'

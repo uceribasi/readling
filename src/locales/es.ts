@@ -1,6 +1,16 @@
+import { learningFeatures } from './learningFeatures'
+import { syncFeatures } from './syncFeatures'
+import { listeningFeatures } from './listeningFeatures'
+import { libraryFeatures } from './libraryFeatures'
+import { memoryFeatures } from './memoryFeatures'
 import type { Messages } from '../lib/i18n'
 
 export const es: Messages = {
+  ...learningFeatures.es,
+  ...syncFeatures.es,
+  ...listeningFeatures.es,
+  ...libraryFeatures.es,
+  ...memoryFeatures.es,
   'nav.skip': 'Saltar al contenido',
   'nav.label': 'Principal',
   'nav.library': 'Biblioteca',

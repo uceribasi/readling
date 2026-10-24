@@ -1,6 +1,7 @@
 import { lazy, Suspense, useEffect } from 'react'
 import { ErrorBoundary } from './components/ErrorBoundary'
 import { Layout } from './components/Layout'
+import { ExtensionLookupBridge } from './components/ExtensionLookupBridge'
 import { useUiLanguage } from './lib/i18n'
 import { useRoute } from './lib/router'
 import { seedSamplesOnce } from './lib/samples'
@@ -16,6 +17,8 @@ const WordsPage = lazy(() => import('./pages/WordsPage').then((m) => ({ default:
 const QuizPage = lazy(() => import('./pages/QuizPage').then((m) => ({ default: m.QuizPage })))
 const StatsPage = lazy(() => import('./pages/StatsPage').then((m) => ({ default: m.StatsPage })))
 const SettingsPage = lazy(() => import('./pages/SettingsPage').then((m) => ({ default: m.SettingsPage })))
+const DailyPage = lazy(() => import('./pages/DailyPage').then((m) => ({ default: m.DailyPage })))
+const ListeningPage = lazy(() => import('./pages/ListeningPage').then((m) => ({ default: m.ListeningPage })))
 
 export default function App() {
   const route = useRoute()
@@ -31,13 +34,16 @@ export default function App() {
 
   return (
     <Layout>
+      <ExtensionLookupBridge />
       <ErrorBoundary resetKey={JSON.stringify(route)}>
       <Suspense fallback={null}>
       {route.name === 'library' && <LibraryPage />}
       {route.name === 'new' && <NewTextPage />}
-      {route.name === 'read' && <ReadPage key={route.id} id={route.id} />}
+      {route.name === 'read' && <ReadPage key={`${route.id}:${route.page ?? ''}`} id={route.id} initialPage={route.page} />}
+      {route.name === 'daily' && <DailyPage />}
+      {route.name === 'listen' && <ListeningPage />}
       {route.name === 'words' && <WordsPage />}
-      {route.name === 'quiz' && <QuizPage key={route.language ?? ''} language={route.language} />}
+      {route.name === 'quiz' && <QuizPage key={`${route.language ?? ''}:${route.textId ?? ''}`} language={route.language} textId={route.textId} />}
       {route.name === 'review' && <ReviewPage />}
       {route.name === 'settings' && <SettingsPage />}
       {route.name === 'stats' && <StatsPage />}
